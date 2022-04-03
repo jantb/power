@@ -13,7 +13,7 @@ import java.util.logging.Logger
 
 class Main : BackgroundFunction<PubSubMessage> {
     private val tibberAuthToken = System.getenv("TIBBER")
-    private val refreshToken =System.getenv("TESLA_REFRESH")
+    private val refreshToken = System.getenv("TESLA_REFRESH")
     private val objectMapper = jacksonObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
     private val client = HttpClient.newBuilder().build()
 
@@ -25,6 +25,7 @@ class Main : BackgroundFunction<PubSubMessage> {
 
             when {
                 charge < 20 -> {
+                    log.info("charge under 20, starting change")
                     startCharge(response.charging_state)
                 }
                 charge < 80 -> {
@@ -58,6 +59,8 @@ class Main : BackgroundFunction<PubSubMessage> {
                 .build()
             log.info("start charge")
             client.send(request, HttpResponse.BodyHandlers.ofString())
+        } else {
+            log.info("start charge not executed state was $chargingState")
         }
     }
 
@@ -72,10 +75,12 @@ class Main : BackgroundFunction<PubSubMessage> {
             log.info("stop charge")
             val r = client.send(request, HttpResponse.BodyHandlers.ofString())
             println(r.body())
+        } else {
+            log.info("stop charge not executed state was $chargingState")
         }
     }
 
-    private fun getOverLimit(d: Double): Pair<Boolean, Boolean> {
+    private fun getOverLimit(limit: Double): Pair<Boolean, Boolean> {
         val request = HttpRequest.newBuilder()
             .uri(URI.create("https://api.tibber.com/v1-beta/gql"))
             .header("Authorization", "Bearer $tibberAuthToken")
@@ -100,18 +105,21 @@ class Main : BackgroundFunction<PubSubMessage> {
         for ((index, today) in priceInfo.today.withIndex()) {
             if (today.startsAt == startsAt) {
                 val prev = priceInfo.today[if (index == 0) 0 else index - 1]
-                val prevOverLimit = calcOverLimit(priceInfo = priceInfo, current = prev.total, d = d)
-                val currentOverLimit = calcOverLimit(priceInfo = priceInfo, current = today.total, d = d)
+                val prevOverLimit = calcOverLimit(priceInfo = priceInfo, current = prev.total, d = limit)
+                val currentOverLimit = calcOverLimit(priceInfo = priceInfo, current = today.total, d = limit)
                 if (prevOverLimit != currentOverLimit) {
-                    log.info("Over limit for this hour")
+                    if (currentOverLimit) {
+                        log.info("Over limit for this hour on changed")
+                    } else {
+                        log.info("Over limit for this hour on changed")
+                    }
                     return Pair(currentOverLimit, true)
                 }
             }
         }
-        log.info("Under limit for this hour")
         return Pair(priceInfo.today.count { it.total >= current }
             .toDouble()
-            .div(24) <= d, false)
+            .div(24) <= limit, false)
     }
 
     private fun calcOverLimit(priceInfo: PriceInfo, current: Double, d: Double): Boolean {
@@ -119,6 +127,7 @@ class Main : BackgroundFunction<PubSubMessage> {
             .toDouble()
             .div(24) <= d
     }
+
     companion object {
         private val log = Logger.getLogger(Main::class.java.name)
     }
