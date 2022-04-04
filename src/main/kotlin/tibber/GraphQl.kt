@@ -1,3 +1,5 @@
+package tibber
+
 data class GraphQl(
 
     var query: String = "{\n" +
@@ -24,6 +26,6 @@ data class GraphQl(
             "  }\n" +
             "}\n",
     var variables: String? = null,
-    var operationName: String? = null
+    var operationName: String? = null,
 
-)
+    )

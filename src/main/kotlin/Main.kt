@@ -5,6 +5,9 @@ import com.google.cloud.functions.BackgroundFunction
 import com.google.cloud.functions.Context
 import tesla.Response
 import tesla.Tesla
+import tibber.GraphQl
+import tibber.PriceInfo
+import tibber.Tibber
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest

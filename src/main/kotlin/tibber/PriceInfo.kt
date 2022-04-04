@@ -1,4 +1,6 @@
+package tibber
+
 data class PriceInfo(
     val current: Current,
-    val today: List<Today>
+    val today: List<Today>,
 )

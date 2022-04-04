@@ -1,7 +1,8 @@
-data class Current(
-    val currency: String,
+package tibber
+
+data class Today(
     val energy: Double,
     val startsAt: String,
     val tax: Double,
-    val total: Double
+    val total: Double,
 )
